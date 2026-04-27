@@ -79,6 +79,50 @@ int eliminar(char*** nombres, int** prioridades, float** tiempos, int* size, cha
     return posicion_eliminada;
 }
 
+int buscar(char** nombres, int size, char* nombre)
+{
+    int posicion = -1;
+
+    for (int i = 0; i < size; i++) 
+    {
+        if (strcmp((nombres)[i], nombre) == 0) 
+        {
+            posicion = i;
+            break;
+        }
+    } 
+
+    return posicion;
+}
+
+
+
+
+int liberar(char*** nombres, int** prioridades, float** tiempos, int* size)
+{
+    if (nombres == NULL || *nombres == NULL || prioridades == NULL || tiempos == NULL)
+    {
+        return 0;
+    }
+
+    for (int i = 0; i < (*size); i++)
+    {
+        free((*nombres)[i]);
+        (*nombres)[i] = NULL;
+    }
+
+    free(*nombres);
+    free(*prioridades);
+    free(*tiempos);
+
+    *nombres = NULL;
+    *prioridades = NULL;
+    *tiempos = NULL;
+    *size = 0;
+
+    return 1;
+}
+
 int main(int argc, char ** argv) {
 
     // Revision de input
@@ -98,6 +142,7 @@ int main(int argc, char ** argv) {
     }
 
     printf("Archivo abierto exitosamente\n\n");
+
 
     char** nombres;
     int* prioridades;
@@ -123,6 +168,7 @@ int main(int argc, char ** argv) {
         nombres[i] = NULL;
     }
 
+
     // Rellena memoria con valores del archivo de tareas
     for (int i = 0; i < size; i++) 
     {
@@ -138,8 +184,8 @@ int main(int argc, char ** argv) {
 
         printf("Tarea insertada: %s, Posicion: %i\n", nombre_tarea, posicion);
     }
-
     printf("\n");
+
 
     int tareas_eliminar = 0;
     fscanf(archivo, "%i", &tareas_eliminar);
@@ -154,15 +200,39 @@ int main(int argc, char ** argv) {
 
         if (posicion == -1)
         {
-            printf("No se enontro la tarea: %s\n", nombre_tarea);
+            printf("No se ecnontro la tarea: %s\n", nombre_tarea);
         } 
         else 
         {
             printf("Tarea eliminada: %s, Posicion: %i\n", nombre_tarea, posicion);
         }
     }
+    printf("\n");
+
+
+    int tareas_buscar = 0;
+    fscanf(archivo, "%i", &tareas_buscar);
+
+    for (int i = 0; i < tareas_buscar; i++)
+    {
+        char nombre_tarea[20];
+
+        fscanf(archivo, "%s", nombre_tarea);
+
+        int posicion = buscar(nombres, size, nombre_tarea);
+
+        if (posicion == -1)
+        {
+            printf("No se encontro la tarea: %s\n", nombre_tarea);
+        } 
+        else 
+        {
+            printf("Tarea encontrada: %s, Posicion: %i\n", nombre_tarea, posicion);
+        }
+    }
 
     fclose(archivo);
+
 
     printf("\nTAREAS A REALIZAR \n");
     for (int i = 0; i < size; i++) 
@@ -171,13 +241,19 @@ int main(int argc, char ** argv) {
         nombres[i], prioridades[i], tiempos[i]);
     }
 
-    for (int i = 0; i < size; i++) 
+
+    int valido = liberar(&nombres, &prioridades, &tiempos, &size);
+
+    if (valido)
     {
-        free(nombres[i]);
+        printf("\nSe limpio la memoria exitosamente.\n");
     }
-    free(nombres);
-    free(prioridades);
-    free(tiempos);
+    else
+    {
+        printf("\nError al intentar liberar la memoria.\n");
+        return 1;
+    }
+
 
     return 0;
 }
