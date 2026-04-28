@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
-int insertar(char*** nombres, int** prioridades, float** tiempos, int* size, char* nombre, int prioridad, float tiempo) 
+int insertar (char*** nombres, int** prioridades, float** tiempos, int* size, char* nombre, int prioridad, float tiempo) 
 {
     int tareas_en_lista = 0;
     while (tareas_en_lista < (*size) && (*nombres)[tareas_en_lista] != NULL) 
@@ -30,17 +31,16 @@ int insertar(char*** nombres, int** prioridades, float** tiempos, int* size, cha
         exit(1);
     }
 
+    strcpy((*nombres)[posicion], nombre);
     (*prioridades)[posicion] = prioridad;
     (*tiempos)[posicion] = tiempo;
-    strcpy((*nombres)[posicion], nombre);
 
     return posicion;
 }
 
-int eliminar(char*** nombres, int** prioridades, float** tiempos, int* size, char* nombre) 
+int eliminar (char*** nombres, int** prioridades, float** tiempos, int* size, char* nombre) 
 {
     int posicion_eliminada = -1;
-
     for (int i = 0; i < (*size); i++) 
     {
         if (strcmp((*nombres)[i], nombre) == 0) 
@@ -57,7 +57,7 @@ int eliminar(char*** nombres, int** prioridades, float** tiempos, int* size, cha
 
     free((*nombres)[posicion_eliminada]);
 
-    for(int i = posicion_eliminada; i < (*size) - 1; i++) 
+    for (int i = posicion_eliminada; i < (*size) - 1; i++) 
     {
         (*nombres)[i] = (*nombres)[i + 1];
         (*prioridades)[i] = (*prioridades)[i + 1];
@@ -79,7 +79,7 @@ int eliminar(char*** nombres, int** prioridades, float** tiempos, int* size, cha
     return posicion_eliminada;
 }
 
-int buscar(char** nombres, int size, char* nombre)
+int buscar (char** nombres, int size, char* nombre)
 {
     int posicion = -1;
 
@@ -95,20 +95,40 @@ int buscar(char** nombres, int size, char* nombre)
     return posicion;
 }
 
+float ejecutar (char*** nombres, int** prioridades, float** tiempos, int* size)
+{
+    if ((*size) <= 0) 
+    {
+        return 0.0;
+    }
 
+    free((*nombres)[0]);
 
+    float tiempo_ejecucion = (*tiempos)[0];
+
+    for (int i = 0; i < (*size) - 1; i++) 
+    {
+        (*nombres)[i] = (*nombres)[i + 1];
+        (*prioridades)[i] = (*prioridades)[i + 1];
+        (*tiempos)[i] = (*tiempos)[i + 1];
+    }
+
+    (*nombres)[(*size) - 1] = NULL;
+
+    (*size) = (*size) - 1;
+
+    *nombres = (char**) realloc(*nombres, (*size) * sizeof(char*));
+    *prioridades = (int*) realloc(*prioridades, (*size) * sizeof(int));
+    *tiempos = (float*) realloc(*tiempos, (*size) * sizeof(float));
+
+    return tiempo_ejecucion;
+}
 
 int liberar(char*** nombres, int** prioridades, float** tiempos, int* size)
 {
-    if (nombres == NULL || *nombres == NULL || prioridades == NULL || tiempos == NULL)
+    if (nombres == NULL || prioridades == NULL || tiempos == NULL)
     {
         return 0;
-    }
-
-    for (int i = 0; i < (*size); i++)
-    {
-        free((*nombres)[i]);
-        (*nombres)[i] = NULL;
     }
 
     free(*nombres);
@@ -123,26 +143,20 @@ int liberar(char*** nombres, int** prioridades, float** tiempos, int* size)
     return 1;
 }
 
-int main(int argc, char ** argv) {
-
-    // Revision de input
-    if (argc < 2) 
-    {
-        printf("Error: Entrege en terminal el nombre del archivo.txt como argumento.\n");
-        return 1;
-    }
+int main() 
+{
+    // Variables para el tiempo de ejecucion
+    clock_t start, end;
+    double tiempo;
 
     // Lectura y validacion de archivo
-    FILE * archivo = fopen(argv[1], "r");
-    
-    if (archivo == NULL) 
+    FILE * entrada = fopen("entrada.txt", "r");
+
+    if (entrada == NULL)
     {
         printf("El archivo no existe o no se puede leer.\n");
         return 1;
     }
-
-    printf("Archivo abierto exitosamente\n\n");
-
 
     char** nombres;
     int* prioridades;
@@ -150,7 +164,7 @@ int main(int argc, char ** argv) {
     int size = 0;
 
     // Se indican todas las tareas presentes a procesar
-    fscanf(archivo, "%i", &size);
+    fscanf(entrada, "%i", &size);
 
     // Se asigna a cada variable del archivo su memoria
     nombres = (char**) malloc(size * sizeof(char*));
@@ -160,66 +174,59 @@ int main(int argc, char ** argv) {
     if (nombres == NULL || prioridades == NULL || tiempos == NULL)
     {
         printf("Error: No hay suficiente memoria.\n");
+        liberar(&nombres, &prioridades, &tiempos, &size);
+
         return 1;
     }
 
+    // Se rellenan las direcciones para los nombres en NULL
     for (int i = 0; i < size; i++) 
     {
         nombres[i] = NULL;
     }
 
+    // Creacion archivo de salida
+    FILE * salida = fopen("salida.txt", "w");
 
-    // Rellena memoria con valores del archivo de tareas
+    // Inserta tareas en la lista de tareas segun prioridad
     for (int i = 0; i < size; i++) 
     {
         char nombre_tarea[20];
         int prioridad_tarea;
         float tiempo_tarea;
 
-        fscanf(archivo, "%s", nombre_tarea);
-        fscanf(archivo, "%i", &prioridad_tarea);
-        fscanf(archivo, "%f", &tiempo_tarea);
+        fscanf(entrada, "%s", nombre_tarea);
+        fscanf(entrada, "%i", &prioridad_tarea);
+        fscanf(entrada, "%f", &tiempo_tarea);
 
+        start = clock();
         int posicion = insertar(&nombres, &prioridades, &tiempos, &size, nombre_tarea, prioridad_tarea, tiempo_tarea);
+        end = clock();
 
-        printf("Tarea insertada: %s, Posicion: %i\n", nombre_tarea, posicion);
+        double tiempo_individual = ((double)(end - start) * 1000.0) / CLOCKS_PER_SEC;
+
+        fprintf(salida, "INSERT %s %f %i\n", nombre_tarea, tiempo_individual, posicion);
+
+        tiempo += tiempo_individual;
     }
-    printf("\n");
 
 
+    // Se indica el numero de tareas a eliminar
     int tareas_eliminar = 0;
-    fscanf(archivo, "%i", &tareas_eliminar);
+    fscanf(entrada, "%i", &tareas_eliminar);
 
+    // Se eliminan las tareas
     for (int i = 0; i < tareas_eliminar; i++) 
     {
         char nombre_tarea[20];
+        fscanf(entrada, "%s", nombre_tarea);
 
-        fscanf(archivo, "%s", nombre_tarea);
-
+        start = clock();
         int posicion = eliminar(&nombres, &prioridades, &tiempos, &size, nombre_tarea);
+        end = clock();
 
-        if (posicion == -1)
-        {
-            printf("No se ecnontro la tarea: %s\n", nombre_tarea);
-        } 
-        else 
-        {
-            printf("Tarea eliminada: %s, Posicion: %i\n", nombre_tarea, posicion);
-        }
-    }
-    printf("\n");
-
-
-    int tareas_buscar = 0;
-    fscanf(archivo, "%i", &tareas_buscar);
-
-    for (int i = 0; i < tareas_buscar; i++)
-    {
-        char nombre_tarea[20];
-
-        fscanf(archivo, "%s", nombre_tarea);
-
-        int posicion = buscar(nombres, size, nombre_tarea);
+        double tiempo_individual = ((double)(end - start) * 1000.0) / CLOCKS_PER_SEC;
+        tiempo += tiempo_individual;
 
         if (posicion == -1)
         {
@@ -227,33 +234,69 @@ int main(int argc, char ** argv) {
         } 
         else 
         {
-            printf("Tarea encontrada: %s, Posicion: %i\n", nombre_tarea, posicion);
+            fprintf(salida, "DELETE %s %f %i\n", nombre_tarea, tiempo_individual, posicion);
         }
     }
 
-    fclose(archivo);
 
+    // Se indica el numero de tareas a buscar
+    int tareas_buscar = 0;
+    fscanf(entrada, "%i", &tareas_buscar);
 
-    printf("\nTAREAS A REALIZAR \n");
-    for (int i = 0; i < size; i++) 
+    // Se buscan las tareas
+    for (int i = 0; i < tareas_buscar; i++)
     {
-        printf("Tarea: %s, Prioridad: %d, Tiempo: %.2f\n",
-        nombres[i], prioridades[i], tiempos[i]);
+        char nombre_tarea[20];
+        fscanf(entrada, "%s", nombre_tarea);
+
+        start = clock();
+        int posicion = buscar(nombres, size, nombre_tarea);
+        end = clock();
+
+        double tiempo_individual = ((double)(end - start) * 1000.0) / CLOCKS_PER_SEC;
+        tiempo += tiempo_individual;
+
+        if (posicion == -1)
+        {
+            printf("No se encontro la tarea: %s\n", nombre_tarea);
+        } 
+        else 
+        {
+            fprintf(salida, "SEARCH %s %f %i\n", nombre_tarea, tiempo_individual, posicion);
+        }
     }
 
+    // Se ejecutan las tareas
+    float tiempo_ejecutadas = 0;
+    int n_ejecutadas = 0;
+    while (size > 0)
+    {
+        n_ejecutadas++;
 
+        char nombre_tarea[20];
+        strcpy(nombre_tarea, nombres[0]);
+        
+        start = clock();
+        float tiempo_tarea = ejecutar(&nombres, &prioridades, &tiempos, &size);
+        end = clock();
+
+        tiempo_ejecutadas += tiempo_tarea;
+
+        double tiempo_individual = ((double)(end - start) * 1000.0) / CLOCKS_PER_SEC;
+        tiempo += tiempo_individual;
+
+        fprintf(salida, "EXECUTE %s %f %i\n", nombre_tarea, tiempo_individual, (int)tiempo_tarea);
+    }
+
+    // Se imprime al archivo el numero de tareas ejecutadas y los tiempos
+    fprintf(salida, "%i\n", n_ejecutadas);
+    fprintf(salida, "%f %f", (tiempo + tiempo_ejecutadas), tiempo);
+
+    fclose(entrada);
+    fclose(salida);
+
+    // Se libera memoria y se valida si fue exitosa la liberacion
     int valido = liberar(&nombres, &prioridades, &tiempos, &size);
 
-    if (valido)
-    {
-        printf("\nSe limpio la memoria exitosamente.\n");
-    }
-    else
-    {
-        printf("\nError al intentar liberar la memoria.\n");
-        return 1;
-    }
-
-
-    return 0;
+    return valido;
 }
