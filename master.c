@@ -3,7 +3,8 @@
 #include <string.h>
 #include <time.h>
 
-// -------------------------DEFINIR STRUCT--------------------------
+// -------------------------DEFINIR STRUCT---------------------||
+
 typedef struct 
 {
     char* nombre;
@@ -11,13 +12,14 @@ typedef struct
     float tiempo;
 } Tarea;
 
-// ------------------------FUNCIONES AUXILIARES----------------------
-double get_time (clock_t start, clock_t end) 
+// ------------------------FUNCIONES AUXILIARES----------------||
+
+double get_time (clock_t start, clock_t end) // Para calcular el tiempo con clock()
 {
     return (((double)(end - start) * 1000.0) / CLOCKS_PER_SEC);
 }
 
-Tarea create_task(char* nombre, int prioridad, float tiempo)
+Tarea create_task(char* nombre, int prioridad, float tiempo) // Crear una tarea cualquiera
 {
     Tarea task;
 
@@ -29,7 +31,8 @@ Tarea create_task(char* nombre, int prioridad, float tiempo)
     return task;
 }
 
-// ------------------------INSERT------------------------------------
+// ------------------------INSERT------------------------------||
+
 int insertar (char*** nombres, int** prioridades, float** tiempos, int* size, char* nombre, int prioridad, float tiempo) 
 {
     int tareas_en_lista = 0;
@@ -38,12 +41,14 @@ int insertar (char*** nombres, int** prioridades, float** tiempos, int* size, ch
         tareas_en_lista++;
     }
 
+    // Se revisa la posicion que acorde a prioridad y si no encuentra va a la ultima posicion disponible
     int posicion = 0;
     while (posicion < tareas_en_lista && prioridad >= (*prioridades)[posicion]) 
     {
         posicion++;
     }
 
+    // Mueve todas las tareas para abajo de la lista para hacer hueco
     for (int i = tareas_en_lista; i > posicion; i--) 
     {
         (*nombres)[i] = (*nombres)[i - 1];
@@ -58,6 +63,7 @@ int insertar (char*** nombres, int** prioridades, float** tiempos, int* size, ch
         exit(1);
     }
 
+    // Se inserta la tarea en el hueco
     strcpy((*nombres)[posicion], nombre);
     (*prioridades)[posicion] = prioridad;
     (*tiempos)[posicion] = tiempo;
@@ -65,7 +71,7 @@ int insertar (char*** nombres, int** prioridades, float** tiempos, int* size, ch
     return posicion;
 }
 
-int insertar_structs (Tarea** lista_tareas, Tarea tarea_insrt, int* list_size) 
+int insertar_structs (Tarea** lista_tareas, Tarea tarea_insrt, int* list_size) // Misma logica que anterior pero para tareas
 {
     int tareas_en_lista = 0;
     while (tareas_en_lista < (*list_size) && (*lista_tareas)[tareas_en_lista].nombre != NULL)
@@ -89,19 +95,46 @@ int insertar_structs (Tarea** lista_tareas, Tarea tarea_insrt, int* list_size)
     return posicion;
 }
 
-// ------------------------DELETE------------------------------------
-int eliminar (char*** nombres, int** prioridades, float** tiempos, int* size, char* nombre) 
+// ------------------------SEARCH------------------------------||
+
+int buscar (char** nombres, int size, char* nombre)
 {
-    int posicion_eliminada = -1;
-    for (int i = 0; i < (*size); i++) 
+    int posicion = -1;
+    for (int i = 0; i < size; i++) 
     {
-        if (strcmp((*nombres)[i], nombre) == 0) 
+        if (strcmp((nombres)[i], nombre) == 0) 
         {
-            posicion_eliminada = i;
+            posicion = i;
+            break;
+        }
+    } 
+
+    return posicion;
+}
+
+int buscar_structs (Tarea* lista_tareas, int list_size, char* nombre) // Misma logica que anterior pero para tareas
+{
+    int posicion = -1;
+    for (int i = 0; i < list_size; i++)
+    {
+        if (strcmp(lista_tareas[i].nombre, nombre) == 0)
+        {
+            posicion = i;
             break;
         }
     }
 
+    return posicion;
+}
+
+
+// ------------------------DELETE------------------------------||
+
+int eliminar (char*** nombres, int** prioridades, float** tiempos, int* size, char* nombre) 
+{
+    int posicion_eliminada = buscar(*nombres, *size, nombre);
+
+    // Si no se encuentra se queda en -1
     if (posicion_eliminada == -1) 
     {
         return -1;
@@ -109,6 +142,7 @@ int eliminar (char*** nombres, int** prioridades, float** tiempos, int* size, ch
 
     free((*nombres)[posicion_eliminada]);
 
+    // Se mueven todas las tareas para arriba de la lista para llenart el hueco
     for (int i = posicion_eliminada; i < (*size) - 1; i++) 
     {
         (*nombres)[i] = (*nombres)[i + 1];
@@ -116,12 +150,14 @@ int eliminar (char*** nombres, int** prioridades, float** tiempos, int* size, ch
         (*tiempos)[i] = (*tiempos)[i + 1];
     }
 
+    // Se disminuye el tamaño de la lista y se hace realloc para usar menos bloques de memoria Heap
     (*size)--;
 
     *nombres = (char**) realloc(*nombres, (*size) * sizeof(char*));
     *prioridades = (int*) realloc(*prioridades, (*size) * sizeof(int));
     *tiempos = (float*) realloc(*tiempos, (*size) * sizeof(float));
 
+    // Se asegura que se entrego la memoria
     if (*nombres == NULL || *prioridades == NULL || *tiempos == NULL)
     {
         printf("Error: Perdida de memoria o falta de memoria encontrada.\n");
@@ -131,17 +167,9 @@ int eliminar (char*** nombres, int** prioridades, float** tiempos, int* size, ch
     return posicion_eliminada;
 }
 
-int eliminar_structs (Tarea** lista_tareas, int* list_size ,char* nombre)
+int eliminar_structs (Tarea** lista_tareas, int* list_size ,char* nombre) // Misma logica que anterior pero para tareas
 {
-    int posicion_eliminada = -1;
-    for (int i = 0; i < (*list_size); i++)
-    {
-        if (strcmp((*lista_tareas)[i].nombre, nombre) == 0)
-        {
-            posicion_eliminada = i;
-            break;
-        }
-    }
+    int posicion_eliminada = buscar_structs((*lista_tareas), (*list_size), nombre);
 
     if (posicion_eliminada == -1)
     {
@@ -162,38 +190,8 @@ int eliminar_structs (Tarea** lista_tareas, int* list_size ,char* nombre)
     return posicion_eliminada;
 }
 
-// -----------------------SEARCH-------------------------------------
-int buscar (char** nombres, int size, char* nombre)
-{
-    int posicion = -1;
-    for (int i = 0; i < size; i++) 
-    {
-        if (strcmp((nombres)[i], nombre) == 0) 
-        {
-            posicion = i;
-            break;
-        }
-    } 
+// ------------------------EXECUTE-----------------------------||
 
-    return posicion;
-}
-
-int buscar_structs (Tarea* lista_tareas, int list_size, char* nombre)
-{
-    int posicion = -1;
-    for (int i = 0; i < list_size; i++)
-    {
-        if (strcmp(lista_tareas[i].nombre, nombre) == 0)
-        {
-            posicion = i;
-            break;
-        }
-    }
-
-    return posicion;
-}
-
-// -----------------------EXECUTE-----------------------------------
 float ejecutar (char*** nombres, int** prioridades, float** tiempos, int* size)
 {
     float tiempo_ejecucion = (*tiempos)[0];
@@ -205,6 +203,7 @@ float ejecutar (char*** nombres, int** prioridades, float** tiempos, int* size)
 
     free((*nombres)[0]);
 
+    // Se mueven las tareas para arriba de la lista (efectivamente borrando el primer item)
     for (int i = 0; i < (*size) - 1; i++) 
     {
         (*nombres)[i] = (*nombres)[i + 1];
@@ -212,6 +211,7 @@ float ejecutar (char*** nombres, int** prioridades, float** tiempos, int* size)
         (*tiempos)[i] = (*tiempos)[i + 1];
     }
 
+    // Disminuye el tamaño y se hace realloc para ocupar menos memoria en Heap
     (*size)--;
 
     *nombres = (char**) realloc(*nombres, (*size) * sizeof(char*));
@@ -221,7 +221,7 @@ float ejecutar (char*** nombres, int** prioridades, float** tiempos, int* size)
     return tiempo_ejecucion;
 }
 
-float ejecutar_structs (Tarea** lista_tareas, int* list_size)
+float ejecutar_structs (Tarea** lista_tareas, int* list_size) // Misma logica que anterior pero para tareas
 {
     float tiempo_ejecucion = (*lista_tareas)[0].tiempo;
 
@@ -244,7 +244,9 @@ float ejecutar_structs (Tarea** lista_tareas, int* list_size)
     return tiempo_ejecucion;
 }
 
-// ------------------------FREE--------------------------------------
+
+// ------------------------FREE--------------------------------||
+
 int liberar(char*** nombres, int** prioridades, float** tiempos, int* size)
 {
     if (nombres == NULL || prioridades == NULL || tiempos == NULL)
@@ -264,7 +266,7 @@ int liberar(char*** nombres, int** prioridades, float** tiempos, int* size)
     return 1;
 }
 
-int liberar_structs (Tarea** lista_tareas, int * size_struct) 
+int liberar_structs (Tarea** lista_tareas, int * size_struct)  // Misma logica que anterior pero para tareas
 {
     if (lista_tareas == NULL) 
     {
@@ -282,9 +284,12 @@ int liberar_structs (Tarea** lista_tareas, int * size_struct)
     return 1;
 }
 
-// -----------------------VALIDAR-----------------------------------
+
+// ------------------------VALIDAR-----------------------------||
+
 int validar(Tarea* lista_tareas, int size_struct, char** nombres, int* prioridades, float* tiempos, int size_ptr)
 {
+    // No son iguales sin los mismos tamaños
     if (size_ptr != size_struct)
     {
         return 0;
@@ -292,6 +297,7 @@ int validar(Tarea* lista_tareas, int size_struct, char** nombres, int* prioridad
 
     for (int i = 0; i < size_struct; i++)
     {
+        // Se evalua si son NULL para que no falle strcmp()
         if (lista_tareas[i].nombre == NULL || nombres[i] == NULL)
         {
             if (lista_tareas[i].nombre != nombres[i]) 
@@ -308,7 +314,8 @@ int validar(Tarea* lista_tareas, int size_struct, char** nombres, int* prioridad
     return 1;
 }
 
-// -----------------------MAIN--------------------------------------
+
+// ------------------------MAIN--------------------------------||
 int main() 
 {
     // Variables para el tiempo de ejecucion
@@ -327,19 +334,20 @@ int main()
     char** nombres;
     int* prioridades;
     float* tiempos;
-    int size = 0;
+    int ptr_size = 0;
     Tarea* lista_tareas;
 
-    // Se indican todas las tareas presentes a procesar
-    fscanf(entrada, "%i", &size);
-    int struct_list_size = size;
+    // Se indican todas las tareas presentes a insertar
+    fscanf(entrada, "%i", &ptr_size);
+    int struct_list_size = ptr_size;
 
-    // Se asigna a cada variable del archivo su memoria
-    nombres = (char**) calloc(size, sizeof(char*));
-    prioridades = (int*) calloc(size, sizeof(int));
-    tiempos = (float*) calloc(size, sizeof(float));
+    // Se asigna a cada variable del archivo su memoria (Calloc para llenar de ceros en ves de que hayan cosas al azar)
+    nombres = (char**) calloc(ptr_size, sizeof(char*));
+    prioridades = (int*) calloc(ptr_size, sizeof(int));
+    tiempos = (float*) calloc(ptr_size, sizeof(float));
     lista_tareas = (Tarea*) calloc(struct_list_size, sizeof(Tarea));
 
+    // Confirmar que se entrego memoria
     if (nombres == NULL || prioridades == NULL || tiempos == NULL || lista_tareas == NULL)
     {
         printf("Error: No hay suficiente memoria.\n");
@@ -347,10 +355,11 @@ int main()
     }
 
     // Creacion archivo de salida
-    FILE * salida = fopen("salida.txt", "w");
+    FILE * salida = fopen("salida.txt", "w"); 
+
 
     // Inserta tareas en la lista de tareas segun prioridad
-    for (int i = 0; i < size; i++) 
+    for (int i = 0; i < ptr_size; i++) 
     {
         char nombre_tarea[20];
         int prioridad_tarea;
@@ -362,13 +371,15 @@ int main()
 
         Tarea tarea_insrt = create_task(nombre_tarea, prioridad_tarea, tiempo_tarea);
 
+        // Operacion Pointers
         start = clock();
-        int posicion_ptrs = insertar(&nombres, &prioridades, &tiempos, &size, nombre_tarea, prioridad_tarea, tiempo_tarea);
+        int posicion_ptrs = insertar(&nombres, &prioridades, &tiempos, &ptr_size, nombre_tarea, prioridad_tarea, tiempo_tarea);
         end = clock();
 
         double actual_time_ptrs = get_time(start, end);
         tiempo_ptrs += actual_time_ptrs;
 
+        // Operacion Structs
         start = clock();
         int posicion_structs = insertar_structs(&lista_tareas, tarea_insrt, &struct_list_size);
         end = clock();
@@ -378,8 +389,11 @@ int main()
 
         fprintf(salida, "INSERT %s PUNTEROS %f %i\n", nombre_tarea, actual_time_ptrs, posicion_ptrs);
         fprintf(salida, "INSERT %s STRUCTS %f %i\n", tarea_insrt.nombre, actual_time_structs, posicion_structs);
-        fprintf(salida, "%i\n", validar(lista_tareas, struct_list_size, nombres, prioridades, tiempos, size));
+
+        // Validacion (Igualdad de tareas y orden)
+        fprintf(salida, "%i\n", validar(lista_tareas, struct_list_size, nombres, prioridades, tiempos, ptr_size));
     }
+
 
     // Se indica el numero de tareas a eliminar
     int tareas_eliminar = 0;
@@ -391,13 +405,15 @@ int main()
         char nombre_tarea[20];
         fscanf(entrada, "%s", nombre_tarea);
 
+        // Operacion Pointers
         start = clock();
-        int posicion_ptrs = eliminar(&nombres, &prioridades, &tiempos, &size, nombre_tarea);
+        int posicion_ptrs = eliminar(&nombres, &prioridades, &tiempos, &ptr_size, nombre_tarea);
         end = clock();
 
         double actual_time_ptrs = get_time(start, end);
         tiempo_ptrs += actual_time_ptrs;
 
+        // Operacion Structs
         start = clock();
         int posicion_structs = eliminar_structs(&lista_tareas, &struct_list_size, nombre_tarea);
         end = clock();
@@ -405,6 +421,7 @@ int main()
         double actual_time_structs = get_time(start, end);
         tiempo_structs += actual_time_structs;
 
+        // Checkeo posicion Pointers
         if (posicion_ptrs == -1)
         {
             fprintf(salida, "DELETE %s PUNTEROS: No se encontro la tarea.\n", nombre_tarea);
@@ -414,6 +431,7 @@ int main()
             fprintf(salida, "DELETE %s PUNTEROS %f %i\n", nombre_tarea, actual_time_ptrs, posicion_ptrs);
         }
 
+        // Checkeo posicion Structs
         if (posicion_structs == -1)
         {
             fprintf(salida, "DELETE %s STRUCTS: No se encontro la tarea.\n", nombre_tarea);
@@ -423,8 +441,10 @@ int main()
             fprintf(salida, "DELETE %s STRUCTS %f %i\n", nombre_tarea, actual_time_structs, posicion_structs);
         }
 
-        fprintf(salida, "%i\n", validar(lista_tareas, struct_list_size, nombres, prioridades, tiempos, size));
+        // Validacion (Igualdad de tareas y orden)
+        fprintf(salida, "%i\n", validar(lista_tareas, struct_list_size, nombres, prioridades, tiempos, ptr_size));
     }
+
 
     // Se indica el numero de tareas a buscar
     int tareas_buscar = 0;
@@ -436,13 +456,15 @@ int main()
         char nombre_tarea[20];
         fscanf(entrada, "%s", nombre_tarea);
 
+        // Operacion Pointers
         start = clock();
-        int posicion_ptrs = buscar(nombres, size, nombre_tarea);
+        int posicion_ptrs = buscar(nombres, ptr_size, nombre_tarea);
         end = clock();
 
         double actual_time_ptrs = get_time(start, end);
         tiempo_ptrs += actual_time_ptrs;
 
+        // Operacion Structs
         start = clock();
         int posicion_structs = buscar_structs(lista_tareas, struct_list_size, nombre_tarea);
         end = clock();
@@ -450,6 +472,7 @@ int main()
         double actual_time_structs = get_time(start, end);
         tiempo_structs += actual_time_structs;
 
+        // Validacion posicion Pointers
         if (posicion_ptrs == -1)
         {
             fprintf(salida, "SEARCH %s PUNTEROS No se encontro la tarea.\n", nombre_tarea);
@@ -459,6 +482,7 @@ int main()
             fprintf(salida, "SEARCH %s PUNTEROS %f %i\n", nombre_tarea, actual_time_ptrs, posicion_ptrs);
         }
 
+        // Validacion posicion Structs
         if (posicion_structs == -1)
         {
             fprintf(salida, "SEARCH %s STRUCTS No se encontro la tarea.\n", nombre_tarea);
@@ -468,16 +492,22 @@ int main()
             fprintf(salida, "SEARCH %s STRUCTS %f %i\n", nombre_tarea, actual_time_structs, posicion_structs);
         }
 
-        fprintf(salida, "%i\n", validar(lista_tareas, struct_list_size, nombres, prioridades, tiempos, size));
+        // Validar (Igualdad tareas y orden)
+        fprintf(salida, "%i\n", validar(lista_tareas, struct_list_size, nombres, prioridades, tiempos, ptr_size));
     }
 
-    // Se ejecutan las tareas
+
+    fclose(entrada);
+
+    // Variables para el tiempo final y de ejecucion
     float ptrs_exec_time = 0;
     float structs_exec_time = 0;
-    int n_ejecutadas = 0;
-    while (size > 0)
+    int numero_ejecutadas = 0;
+
+    // Se ejecutan las tareas
+    while (ptr_size > 0)
     {
-        n_ejecutadas++;
+        numero_ejecutadas++;
 
         char nombre_ptrs[20];
         strcpy(nombre_ptrs, nombres[0]);
@@ -485,13 +515,15 @@ int main()
         char nombre_structs[20];
         strcpy(nombre_structs, lista_tareas[0].nombre);
         
+        // Operacion Pointers
         start = clock();
-        float tiempo_tarea_ptrs = ejecutar(&nombres, &prioridades, &tiempos, &size);
+        float tiempo_tarea_ptrs = ejecutar(&nombres, &prioridades, &tiempos, &ptr_size);
         end = clock();
 
         double actual_time_ptrs = get_time(start, end);
         tiempo_ptrs += actual_time_ptrs;
 
+        // Operacion Structs
         start = clock();
         float tiempo_tarea_structs = ejecutar_structs(&lista_tareas, &struct_list_size);
         end = clock();
@@ -505,19 +537,20 @@ int main()
         fprintf(salida, "EXECUTE %s STRUCTS %f %i\n", nombre_ptrs, actual_time_ptrs, (int)tiempo_tarea_ptrs);
         structs_exec_time += tiempo_tarea_structs;
 
-        fprintf(salida, "%i\n", validar(lista_tareas, struct_list_size, nombres, prioridades, tiempos, size));
+        // Validacion (Igualdada de tareas y orden)
+        fprintf(salida, "%i\n", validar(lista_tareas, struct_list_size, nombres, prioridades, tiempos, ptr_size));
     }
 
+
     // Se imprime al archivo el numero de tareas ejecutadas y los tiempos
-    fprintf(salida, "%i\n", n_ejecutadas);
+    fprintf(salida, "%i\n", numero_ejecutadas);
     fprintf(salida, "PUNTEROS %f %f\n", (tiempo_ptrs + ptrs_exec_time), tiempo_ptrs);
     fprintf(salida, "STRUCTS %f %f\n", (tiempo_structs + structs_exec_time), tiempo_structs);
 
-    fclose(entrada);
     fclose(salida);
 
     // Se libera memoria y se valida si fue exitosa la liberacion
-    int lib_ptrs = liberar(&nombres, &prioridades, &tiempos, &size);
+    int lib_ptrs = liberar(&nombres, &prioridades, &tiempos, &ptr_size);
     int lib_structs = liberar_structs(&lista_tareas, &struct_list_size);
 
     if (!lib_ptrs || !lib_structs)
